@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
@@ -39,12 +40,14 @@ public class GameScreen {
     private Label waitingForStartLabel;
     private Table gameTable;
     private TextButton checkButton, foldButton, callButton, raiseButton;
+
+    private TextButton nextGame;
     private Label potLabel, currentPlayerLabel;
     private Image[] communityCardImages;
     private Label gameResultLabel;
     private Label playerChipsLabel;
 
-
+    private BitmapFont font;
     private PlayerUI[] playerUIs;
 
     private boolean isGameStarted = false;
@@ -240,13 +243,38 @@ public class GameScreen {
         buttonGroup.setPosition(900 - totalWidth / 2, 240);
         gameTable.addActor(buttonGroup);
 
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("ui/clickbait.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 36;
+        BitmapFont font = generator.generateFont(parameter);
+        generator.dispose();
 
-        gameResultLabel = new Label("", skin);
-        gameResultLabel.setPosition(900 - gameResultLabel.getWidth() / 2, 600);
-        gameResultLabel.setColor(Color.RED);
+
+
+        Label.LabelStyle labelStyle = new Label.LabelStyle();
+        labelStyle.font = font;
+        labelStyle.fontColor = Color.GREEN;
+        gameResultLabel = new Label("", labelStyle);
+        gameResultLabel.setPosition(800 - gameResultLabel.getWidth() / 2, 640);
         gameResultLabel.setVisible(false);
 
         gameTable.addActor(gameResultLabel);
+
+        nextGame = new TextButton("Next Game", skin);
+        nextGame.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if (roundListener != null) {
+                    nextGame.setDisabled(true);
+                    nextGame.setVisible(false);
+                    roundListener.onNextRound();
+                }
+            }
+        });
+        nextGame.setPosition(830 - nextGame.getWidth() /2, 420);
+        nextGame.setVisible(false);
+        nextGame.setDisabled(false);
+        gameTable.addActor(nextGame);
 
 
 
@@ -273,9 +301,15 @@ public class GameScreen {
         void onAction(PlayerAction.ActionType actionType, int amount);
     }
 
+    public interface NextRoundListener {
+        void onNextRound();
+    }
+
     private NameSubmitListener nameSubmitListener;
     private StartGameListener startGameListener;
     private ActionListener actionListener;
+
+    private NextRoundListener roundListener;
 
     public void setNameSubmitListener(NameSubmitListener listener) {
         this.nameSubmitListener = listener;
@@ -287,6 +321,10 @@ public class GameScreen {
 
     public void setActionListener(ActionListener listener) {
         this.actionListener = listener;
+    }
+
+    public void setNextGameListener(NextRoundListener listener) {
+        this.roundListener = listener;
     }
 
     public void setLocalPlayerName(String name) {
@@ -329,7 +367,10 @@ public class GameScreen {
 
         waitingTable.setVisible(true);
     }
-
+    public void showNextGame() {
+        nextGame.setDisabled(false);
+        nextGame.setVisible(true);
+    }
     public void showStartGameTextBox() {
 
         nameTable.setVisible(false);

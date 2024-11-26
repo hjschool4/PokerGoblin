@@ -41,7 +41,11 @@ public class ServerMain {
                 } else if (object instanceof StartGameButton) {
                     System.out.println("Received StartGameButton from: " + connection);
                     gameManager.handleStartGameButton(connection);
-                } else {
+                } else if (object instanceof StartNextGame) {
+                    System.out.println("Recieved StartNextGame from: " + connection);
+                    gameManager.startPreflop();
+                }
+                else {
                     System.out.println("Received unknown object: " + object.getClass().getName());
                 }
             }

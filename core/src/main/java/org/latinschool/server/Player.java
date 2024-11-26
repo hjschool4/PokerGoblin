@@ -11,17 +11,17 @@ public class Player {
     private boolean hasFolded;
     private Card[] cards;
     private boolean isTurn;
-    private String lastAction; 
+    private String lastAction;
 
     private int contributed;
     public Player(Connection connection, String name) {
         this.connection = connection;
         this.name = name;
-        this.chips = 1000; 
+        this.chips = 1000;
         this.hasFolded = false;
         this.cards = new Card[0];
         this.isTurn = false;
-        this.lastAction = "none"; 
+        this.lastAction = "none";
         this.contributed = 0;
     }
 
@@ -31,17 +31,17 @@ public class Player {
     public boolean hasFolded() { return hasFolded; }
     public Card[] getCards() { return cards; }
     public boolean isTurn() { return isTurn; }
-    public String getLastAction() { return lastAction; } 
+    public String getLastAction() { return lastAction; }
 
     public void setCards(Card[] cards) { this.cards = cards; }
     public void setFolded(boolean folded) { this.hasFolded = folded; }
     public void setTurn(boolean turn) { this.isTurn = turn; }
-    public void setLastAction(String action) { this.lastAction = action; } 
+    public void setLastAction(String action) { this.lastAction = action; }
 
 
     public void bet(int amount) {
         if (amount > chips) {
-            amount = chips; 
+            amount = chips;
         }
         chips -= amount;
     }
@@ -54,7 +54,8 @@ public class Player {
         this.hasFolded = false;
         this.cards = new Card[0];
         this.isTurn = false;
-        this.lastAction = "none"; 
+        this.lastAction = "none";
+        this.contributed = 0;
     }
     public int getContributed() {
         return this.contributed;

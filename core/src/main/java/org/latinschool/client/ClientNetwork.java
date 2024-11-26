@@ -17,12 +17,12 @@ import java.io.IOException;
 public class ClientNetwork {
     private Client client;
     private GameScreen gameScreen;
-    private String playerName; 
+    private String playerName;
 
     public ClientNetwork(GameScreen gameScreen) {
         this.client = new Client();
         this.gameScreen = gameScreen;
-        KryoRegistration.register(client.getKryo()); 
+        KryoRegistration.register(client.getKryo());
         client.addListener(new ClientListener());
     }
 
@@ -51,6 +51,10 @@ public class ClientNetwork {
     public void sendStartGame() {
         System.out.println("Sending StartGameButton message.");
         client.sendTCP(new StartGameButton());
+    }
+    public void sendNextRound() {
+        System.out.println("Sending next Round");
+        client.sendTCP(new StartNextGame());
     }
 
     public void setLocalPlayerName(String name) {
@@ -91,9 +95,15 @@ public class ClientNetwork {
                 Gdx.app.postRunnable(() -> gameScreen.updateGameState(state));
             } else if (object instanceof GameResult) {
                 GameResult result = (GameResult) object;
+                String[] playerNames = result.getPlayerNames();
+                boolean isHost = playerNames.length > 0 && playerName.equals(playerNames[0]);
+                if (isHost) {
+                    Gdx.app.postRunnable(() -> gameScreen.showNextGame());
+                }
+
                 Gdx.app.postRunnable(() -> gameScreen.showGameResult(result.getWinnerName(), result.getWinnerRank()));
             } else if (object instanceof WaitingMessage) {
-                
+
             } else if (object instanceof ServerFullMessage) {
                 ServerFullMessage fullMessage = (ServerFullMessage) object;
                 Gdx.app.postRunnable(() -> {
@@ -101,7 +111,7 @@ public class ClientNetwork {
                     Dialog dialog = new Dialog("Server Full", skin) {
                         @Override
                         protected void result(Object object) {
-                            
+
                             if (object instanceof String && ((String) object).equals("OK")) {
                                 Gdx.app.exit();
                             }
@@ -119,7 +129,7 @@ public class ClientNetwork {
                         @Override
                         protected void result(Object object) {
                             if (object instanceof String && ((String) object).equals("Retry")) {
-                                
+
                                 gameScreen.promptForName();
                             }
                         }

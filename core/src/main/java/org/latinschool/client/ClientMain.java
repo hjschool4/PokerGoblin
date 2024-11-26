@@ -16,17 +16,17 @@ public class ClientMain extends ApplicationAdapter {
 
     @Override
     public void create () {
-        
+
         gameScreen = new GameScreen();
 
-        
+
         clientNetwork = new ClientNetwork(gameScreen);
         clientNetwork.start();
         try {
             clientNetwork.connect("localhost", 54555, 54777);
         } catch (IOException e) {
             e.printStackTrace();
-            
+
             Gdx.app.postRunnable(() -> {
                 Dialog dialog = new Dialog("Connection Failed", new Skin(Gdx.files.internal("ui/uiskin.json")));
                 dialog.text("Could not connect to the server.");
@@ -36,19 +36,21 @@ public class ClientMain extends ApplicationAdapter {
             return;
         }
 
-        
+
         Gdx.input.setInputProcessor(gameScreen.getStage());
 
-        
+
         gameScreen.setNameSubmitListener(playerName -> {
             clientNetwork.sendJoinGame(playerName);
-            clientNetwork.setLocalPlayerName(playerName); 
+            clientNetwork.setLocalPlayerName(playerName);
         });
 
         gameScreen.setStartGameListener(() -> {
             clientNetwork.sendStartGame();
         });
-
+        gameScreen.setNextGameListener(() -> {
+            clientNetwork.sendNextRound();
+        });
         gameScreen.setActionListener((actionType, amount) -> {
             clientNetwork.sendPlayerAction(actionType, amount);
         });

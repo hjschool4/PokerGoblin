@@ -169,6 +169,7 @@ public class GameManager {
                 break;
             case CALL:
                 int callAmount = minbet - player.getContributed();
+                System.out.println("player: " + player.getName() + " minbet: " + minbet + " contibuted: " + player.getContributed() + " call ammount: " + callAmount);
                 if (player.getChips() < callAmount) {
                     callAmount = player.getChips();
                 }
@@ -176,6 +177,7 @@ public class GameManager {
                 player.addContributed(callAmount);
                 pot += callAmount;
                 playersToAct.remove(player);
+
                 break;
             case RAISE:
                 int raiseAmount = action.getAmount();
@@ -200,7 +202,10 @@ public class GameManager {
         promptPlayerAction();
         if(checkRoundOver()) {
             proceedToNextRound();
-            resetPlayersToAct(players.get(currentPlayerTurn));
+            resetPlayersToAct(players.get((currentPlayerTurn -1) % players.size()));
+            resetAllContributed();
+            minbet = 0;
+
         }
 
 
@@ -234,7 +239,11 @@ public class GameManager {
             }
         }
     }
-
+    private void resetAllContributed() {
+        for (Player p : players.values()) {
+            p.resetContributed();
+        }
+    }
     public void startPreflop() {
 
         List<Player> playerList = new ArrayList<>(players.values());
@@ -267,7 +276,6 @@ public class GameManager {
     }
     private boolean checkRoundOver() {
         if (playersToAct.isEmpty()) {
-            minbet = 0;
 
             return true;
         }
@@ -303,7 +311,9 @@ public class GameManager {
         );
         server.sendToAllTCP(state);
     }
+    public void handleNextGame() {
 
+    }
     private void proceedToNextRound() {
         if (communityCards.size() < 5) {
             if (communityCards.size() == 0) {
@@ -323,6 +333,9 @@ public class GameManager {
     }
 
     private void showdown() {
+        String[] playerNames = players.values().stream()
+            .map(Player::getName)
+            .toArray(String[]::new);
         List<Player> activePlayers = new ArrayList<>();
         for (Player player : players.values()) {
             if (!player.hasFolded()) {
@@ -355,7 +368,7 @@ public class GameManager {
 
         if (winner != null && bestHand != null) {
             winner.addChips(pot);
-            server.sendToAllTCP(new GameResult(winner.getName(), bestHand.getRank()));
+            server.sendToAllTCP(new GameResult(winner.getName(), bestHand.getRank(), playerNames));
         }
 
 
@@ -371,10 +384,14 @@ public class GameManager {
             player.reset();
             player.setLastAction("none");
         }
+
     }
 
     private void endGameDueToDisconnection() {
-        server.sendToAllTCP(new GameResult("No Winner", HandRank.HIGH_CARD));
+        String[] playerNames = players.values().stream()
+            .map(Player::getName)
+            .toArray(String[]::new);
+        server.sendToAllTCP(new GameResult("No Winner", HandRank.HIGH_CARD, playerNames));
         gameStarted = false;
         communityCards.clear();
         deck = new Deck();
