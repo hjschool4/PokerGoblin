@@ -23,16 +23,16 @@ public class GameManager {
     private int currentPlayerTurn;
     private boolean gameStarted;
 
-    private Player lastraiser;
+    private Integer raiserIndex;
 
     private HandEvaluator handEvaluator;
 
     private Map<String, Player> nameToPlayerMap;
 
     private Queue<Player> playersToAct;
+    private List<Player> playersInOrder;
 
-
-    public int minbet;
+    public int currentBet;
     private List<Player> activePlayers;
     public GameManager(Server server) {
         this.server = server;
@@ -48,9 +48,9 @@ public class GameManager {
         this.gameStarted = false;
         this.handEvaluator = new HandEvaluator();
         this.nameToPlayerMap = new HashMap<>();
-        this.minbet = 20;
-        this.lastraiser = null;
+        this.currentBet = 0;
         activePlayers = new ArrayList<>();
+        this.playersInOrder = new ArrayList<>();
     }
 
     public void handleJoinGame(Connection connection, String desiredName) {
@@ -69,6 +69,7 @@ public class GameManager {
 
 
         Player newPlayer = new Player(connection, desiredName);
+        playersInOrder.add(newPlayer);
         players.put(connection, newPlayer);
         nameToPlayerMap.put(desiredName, newPlayer);
 
@@ -156,55 +157,53 @@ public class GameManager {
 
         switch (action.getAction()) {
             case CHECK:
-                if (minbet - player.getContributed() != 0) {
-                    player.setFolded(true);
-                    player.setLastAction(PlayerAction.ActionType.FOLD.name());
+                if (player.getCurrentBet() < currentBet) {
+                    player.getConnection().sendTCP(new ErrorMessage("Cannot check. You need to call or raise."));
+                    return;
                 }
-                playersToAct.remove(player);
+                moveToNextPlayer();
                 break;
             case FOLD:
                 player.setFolded(true);
                 activePlayers.remove(player);
-                playersToAct.remove(player);
+                moveToNextPlayer();
                 break;
             case CALL:
-                int callAmount = minbet - player.getContributed();
-                System.out.println("player: " + player.getName() + " minbet: " + minbet + " contibuted: " + player.getContributed() + " call ammount: " + callAmount);
+                int callAmount = currentBet - player.getCurrentBet();
                 if (player.getChips() < callAmount) {
                     callAmount = player.getChips();
                 }
+
                 player.bet(callAmount);
-                player.addContributed(callAmount);
+                player.setCurrentBet(player.getCurrentBet() + callAmount);
                 pot += callAmount;
-                playersToAct.remove(player);
+                moveToNextPlayer();
 
                 break;
             case RAISE:
                 int raiseAmount = action.getAmount();
-                if (player.getChips() < (raiseAmount + (minbet - player.getContributed()))) {
+                int newBet = currentBet + raiseAmount;
+                if (player.getChips() < raiseAmount) {
+                    newBet = player.getCurrentBet() + player.getChips();
                     raiseAmount = player.getChips();
                 }
-                player.bet(raiseAmount  + (minbet - player.getContributed()));
+                player.bet(raiseAmount);
                 pot += raiseAmount;
-                minbet += action.getAmount();
-                player.addContributed(raiseAmount);
-                lastraiser = player;
-
-
-                resetPlayersToAct(player);
+                currentBet = newBet;
+                player.setCurrentBet(newBet);
+                raiserIndex = currentPlayerTurn;
+                moveToNextPlayer();
+                //resetPlayersToAct(player);
                 break;
         }
 
 
 
 
-        currentPlayerTurn = (currentPlayerTurn + 1) % players.size();
         promptPlayerAction();
         if(checkRoundOver()) {
             proceedToNextRound();
-            resetPlayersToAct(players.get((currentPlayerTurn -1) % players.size()));
-            resetAllContributed();
-            minbet = 0;
+            resetBets();
 
         }
 
@@ -231,32 +230,23 @@ public class GameManager {
             }
         }
     }
-    private void resetPlayersToAct(Player raiser) {
-        playersToAct.clear();
-        for (Player p : activePlayers) {
-            if (!p.equals(raiser) && !p.hasFolded()){
-                playersToAct.add(p);
-            }
-        }
+    private void moveToNextPlayer() {
+        currentPlayerTurn = (currentPlayerTurn + 1) % playersInOrder.size();
     }
-    private void resetAllContributed() {
-        for (Player p : players.values()) {
-            p.resetContributed();
-        }
-    }
-    public void startPreflop() {
 
+    public void startPreflop() {
+        currentBet = 20;
         List<Player> playerList = new ArrayList<>(players.values());
 
         Player smallBlindPlayer = playerList.get((dealerIndex + 1) % players.size());
         Player bigBlindPlayer = playerList.get((dealerIndex + 2) % players.size());
         smallBlindPlayer.bet(smallBlind);
-        smallBlindPlayer.addContributed(10);
+        smallBlindPlayer.setCurrentBet(10);
         bigBlindPlayer.bet(bigBlind);
-        bigBlindPlayer.addContributed(20);
+        bigBlindPlayer.setCurrentBet(20);
         pot += smallBlind + bigBlind;
 
-
+        raiserIndex = 1;
 
 
 
@@ -268,40 +258,53 @@ public class GameManager {
         }
 
         server.sendToAllTCP(new StartGame());
-        currentPlayerTurn = (dealerIndex + 3) % players.size();
+        currentPlayerTurn = (raiserIndex + 1) % playersInOrder.size();
         promptPlayerAction();
         smallBlindPlayer.setLastAction("SMALL_BLIND " + smallBlind);
         bigBlindPlayer.setLastAction("BIG_BLIND " + bigBlind);
         initializePlayersToAct(playerList);
     }
     private boolean checkRoundOver() {
-        if (playersToAct.isEmpty()) {
+        /*if (playersToAct.isEmpty()) {
 
+            return true;
+        }*/
+        if (currentPlayerTurn == raiserIndex) {
             return true;
         }
         return false;
     }
+    private void resetBets() {
+        for (Player p : playersInOrder) {
+            p.setCurrentBet(0);
+            p.setLastAction("None");
+        }
+        currentBet = 0;
+        currentPlayerTurn = 0;
+        raiserIndex = -1;
+    }
 
     private void promptPlayerAction() {
-        List<Player> playerList = new ArrayList<>(players.values());
-        Player currentPlayer = playerList.get(currentPlayerTurn);
+
+        Player currentPlayer = playersInOrder.get(currentPlayerTurn);
 
         if (currentPlayer.hasFolded()) {
-            currentPlayerTurn = (currentPlayerTurn + 1) % players.size();
+            currentPlayerTurn = (raiserIndex + 1) % playersInOrder.size();
             promptPlayerAction();
             return;
         }
 
         currentPlayer.setTurn(true);
 
-
+        /*
         UpdateGameState.PlayerStatus[] statuses = new UpdateGameState.PlayerStatus[players.size()];
         for (int i = 0; i < players.size(); i++) {
             Player p = playerList.get(i);
             String lastAction = p.getLastAction() != null ? p.getLastAction() : "none";
             statuses[i] = new UpdateGameState.PlayerStatus(p.getName(), p.getChips(), p.hasFolded(), lastAction);
         }
-
+        */
+        UpdateGameState.PlayerStatus[] statuses = getPlayerStatuses();
 
         UpdateGameState state = new UpdateGameState(
             communityCards.toArray(new Card[0]),
@@ -309,10 +312,21 @@ public class GameManager {
             statuses,
             pot
         );
+        System.out.println(currentPlayer.getName());
         server.sendToAllTCP(state);
     }
-    public void handleNextGame() {
-
+    private UpdateGameState.PlayerStatus[] getPlayerStatuses() {
+        UpdateGameState.PlayerStatus[] statuses = new UpdateGameState.PlayerStatus[playersInOrder.size()];
+        for (int i = 0; i < playersInOrder.size(); i++) {
+            Player p = playersInOrder.get(i);
+            statuses[i] = new UpdateGameState.PlayerStatus(
+                p.getName(),
+                p.getChips(),
+                p.hasFolded(),
+                p.getLastAction()
+            );
+        }
+        return statuses;
     }
     private void proceedToNextRound() {
         if (communityCards.size() < 5) {

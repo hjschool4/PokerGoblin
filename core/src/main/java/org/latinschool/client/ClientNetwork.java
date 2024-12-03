@@ -93,7 +93,10 @@ public class ClientNetwork {
             } else if (object instanceof UpdateGameState) {
                 UpdateGameState state = (UpdateGameState) object;
                 Gdx.app.postRunnable(() -> gameScreen.updateGameState(state));
-            } else if (object instanceof GameResult) {
+            } else if (object instanceof ErrorMessage){
+                Gdx.app.postRunnable(() -> gameScreen.showErrorDialog(((ErrorMessage) object).getMessage()));
+            }
+            else if (object instanceof GameResult) {
                 GameResult result = (GameResult) object;
                 String[] playerNames = result.getPlayerNames();
                 boolean isHost = playerNames.length > 0 && playerName.equals(playerNames[0]);

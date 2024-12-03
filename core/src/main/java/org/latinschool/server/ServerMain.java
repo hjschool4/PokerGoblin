@@ -3,6 +3,7 @@ package org.latinschool.server;
 import com.esotericsoftware.kryonet.Server;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
+import org.latinschool.client.gui.GameScreen;
 import org.latinschool.shared.KryoRegistration;
 import org.latinschool.shared.messages.*;
 import com.esotericsoftware.kryo.Kryo;
@@ -44,8 +45,7 @@ public class ServerMain {
                 } else if (object instanceof StartNextGame) {
                     System.out.println("Recieved StartNextGame from: " + connection);
                     gameManager.startPreflop();
-                }
-                else {
+                } else {
                     System.out.println("Received unknown object: " + object.getClass().getName());
                 }
             }

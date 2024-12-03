@@ -13,7 +13,7 @@ public class Player {
     private boolean isTurn;
     private String lastAction;
 
-    private int contributed;
+    private int bet;
     public Player(Connection connection, String name) {
         this.connection = connection;
         this.name = name;
@@ -22,7 +22,7 @@ public class Player {
         this.cards = new Card[0];
         this.isTurn = false;
         this.lastAction = "none";
-        this.contributed = 0;
+        this.bet = 0;
     }
 
     public Connection getConnection() { return connection; }
@@ -55,17 +55,17 @@ public class Player {
         this.cards = new Card[0];
         this.isTurn = false;
         this.lastAction = "none";
-        this.contributed = 0;
+        this.bet = 0;
     }
-    public int getContributed() {
-        return this.contributed;
-    }
-
-    public void addContributed(int amount) {
-        this.contributed += amount;
+    public int getCurrentBet() {
+        return this.bet;
     }
 
-    public void resetContributed() {
-        this.contributed = 0;
+    public void setCurrentBet(int amount) {
+        this.bet = amount;
+    }
+
+    public void resetCurrentBet() {
+        this.bet = 0;
     }
 }

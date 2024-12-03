@@ -682,7 +682,7 @@ public class GameScreen {
         raiseDialog.show(stage);
     }
 
-    private void showErrorDialog(String message) {
+    public void showErrorDialog(String message) {
         Skin skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         Dialog errorDialog = new Dialog("Error", skin);
         errorDialog.text(message);

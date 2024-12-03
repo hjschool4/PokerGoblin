@@ -27,6 +27,7 @@ public class KryoRegistration {
         kryo.register(ServerFullMessage.class);
         kryo.register(NameAlreadyTakenMessage.class);
         kryo.register(StartNextGame.class);
+        kryo.register(ErrorMessage.class);
 
         kryo.register(Card.class);
         kryo.register(Suit.class);
