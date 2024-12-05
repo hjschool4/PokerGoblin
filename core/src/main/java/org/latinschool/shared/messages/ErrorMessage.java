@@ -6,6 +6,9 @@ public class ErrorMessage extends BaseMessage {
     public ErrorMessage(String message) {
         this.message = message;
     }
+    public ErrorMessage() {
+
+    }
 
     public String getMessage() {
         return message;

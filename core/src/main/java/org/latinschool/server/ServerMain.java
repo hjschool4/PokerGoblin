@@ -7,8 +7,15 @@ import org.latinschool.client.gui.GameScreen;
 import org.latinschool.shared.KryoRegistration;
 import org.latinschool.shared.messages.*;
 import com.esotericsoftware.kryo.Kryo;
-
 import java.io.IOException;
+
+
+
+
+
+
+
+
 
 public class ServerMain {
     private Server server;

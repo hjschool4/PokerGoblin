@@ -23,7 +23,7 @@ public class ClientMain extends ApplicationAdapter {
         clientNetwork = new ClientNetwork(gameScreen);
         clientNetwork.start();
         try {
-            clientNetwork.connect("localhost", 54555, 54777);
+            clientNetwork.connect("18.118.149.243", 54555, 54777);
         } catch (IOException e) {
             e.printStackTrace();
 

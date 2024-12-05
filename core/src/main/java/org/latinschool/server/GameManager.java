@@ -149,12 +149,16 @@ public class GameManager {
         }
 
 
+
+
+
+
         String actionStr = action.getAction().name();
         if (action.getAction() == PlayerAction.ActionType.RAISE) {
             actionStr += " " + action.getAmount();
         }
         player.setLastAction(actionStr);
-
+        System.out.println("Currbet:" + currentBet + " Playbet:" + player.getCurrentBet());
         switch (action.getAction()) {
             case CHECK:
                 if (player.getCurrentBet() < currentBet) {
@@ -166,10 +170,12 @@ public class GameManager {
             case FOLD:
                 player.setFolded(true);
                 activePlayers.remove(player);
+                System.out.println("Active Players after fold: " + activePlayers.size());
                 moveToNextPlayer();
                 break;
             case CALL:
                 int callAmount = currentBet - player.getCurrentBet();
+                System.out.println("Call amount: " + callAmount);
                 if (player.getChips() < callAmount) {
                     callAmount = player.getChips();
                 }
@@ -196,12 +202,14 @@ public class GameManager {
                 //resetPlayersToAct(player);
                 break;
         }
-
-
-
-
+        //System.out.println("Raiser index: " + raiserIndex + " Player turn: " + currentPlayerTurn);
+        System.out.println("Active Player amount:" + activePlayers.size());
         promptPlayerAction();
+        if (activePlayers.size() == 1) {
+            showdown();
+        }
         if(checkRoundOver()) {
+            System.out.println("Round Proceeded");
             proceedToNextRound();
             resetBets();
 
@@ -219,6 +227,7 @@ public class GameManager {
         dealerIndex = (dealerIndex + 1) % players.size();
         startPreflop();
     }
+
     private void initializePlayersToAct(List<Player> playerList) {
         playersToAct.clear();
         int totalPlayers = playerList.size();
@@ -237,14 +246,21 @@ public class GameManager {
     public void startPreflop() {
         currentBet = 20;
         List<Player> playerList = new ArrayList<>(players.values());
+        for (Player player : players.values()) {
+            if (!player.hasFolded()) {
+                activePlayers.add(player);
+            }
+        }
 
         Player smallBlindPlayer = playerList.get((dealerIndex + 1) % players.size());
         Player bigBlindPlayer = playerList.get((dealerIndex + 2) % players.size());
         smallBlindPlayer.bet(smallBlind);
-        smallBlindPlayer.setCurrentBet(10);
+        smallBlindPlayer.setCurrentBet(smallBlind);
         bigBlindPlayer.bet(bigBlind);
-        bigBlindPlayer.setCurrentBet(20);
+        bigBlindPlayer.setCurrentBet(bigBlind);
         pot += smallBlind + bigBlind;
+
+        System.out.println(smallBlindPlayer.getCurrentBet());
 
         raiserIndex = 1;
 
@@ -262,6 +278,7 @@ public class GameManager {
         promptPlayerAction();
         smallBlindPlayer.setLastAction("SMALL_BLIND " + smallBlind);
         bigBlindPlayer.setLastAction("BIG_BLIND " + bigBlind);
+
         initializePlayersToAct(playerList);
     }
     private boolean checkRoundOver() {
@@ -280,8 +297,6 @@ public class GameManager {
             p.setLastAction("None");
         }
         currentBet = 0;
-        currentPlayerTurn = 0;
-        raiserIndex = -1;
     }
 
     private void promptPlayerAction() {
@@ -304,6 +319,7 @@ public class GameManager {
             statuses[i] = new UpdateGameState.PlayerStatus(p.getName(), p.getChips(), p.hasFolded(), lastAction);
         }
         */
+
         UpdateGameState.PlayerStatus[] statuses = getPlayerStatuses();
 
         UpdateGameState state = new UpdateGameState(
@@ -361,7 +377,26 @@ public class GameManager {
             gameStarted = false;
             return;
         }
+        if (activePlayers.size() == 1) {
+            Player winner = activePlayers.get(0);
+            winner.addChips(pot);
+            server.sendToAllTCP(new GameResult(winner.getName(), HandRank.ALL_FOLDED, playerNames));
 
+
+            gameStarted = false;
+            communityCards.clear();
+            deck = new Deck();
+            deck.shuffle();
+            pot = 0;
+            dealerIndex = (dealerIndex + 1) % players.size();
+
+
+            for (Player player : players.values()) {
+                player.reset();
+                player.setLastAction("none");
+            }
+            return;
+        }
         Map<Player, HandEvaluator.EvaluatedHand> playerHands = new HashMap<>();
         for (Player player : activePlayers) {
             List<Card> allCards = new ArrayList<>();

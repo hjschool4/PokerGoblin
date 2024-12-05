@@ -10,12 +10,12 @@ import java.util.*;
 public class HandEvaluator {
     public enum HandRank {
         HIGH_CARD, ONE_PAIR, TWO_PAIR, THREE_OF_A_KIND, STRAIGHT, FLUSH,
-        FULL_HOUSE, FOUR_OF_A_KIND, STRAIGHT_FLUSH, ROYAL_FLUSH
+        FULL_HOUSE, FOUR_OF_A_KIND, STRAIGHT_FLUSH, ROYAL_FLUSH, ALL_FOLDED
     }
 
     public static class EvaluatedHand implements Comparable<EvaluatedHand> {
         private HandRank rank;
-        private List<Rank> highCards; 
+        private List<Rank> highCards;
 
         public EvaluatedHand(HandRank rank, List<Rank> highCards) {
             this.rank = rank;
@@ -35,7 +35,7 @@ public class HandEvaluator {
             if (this.rank.ordinal() != o.rank.ordinal()) {
                 return Integer.compare(this.rank.ordinal(), o.rank.ordinal());
             }
-            
+
             for (int i = 0; i < this.highCards.size(); i++) {
                 if (i >= o.highCards.size()) return 1;
                 int comparison = this.highCards.get(i).ordinal() - o.highCards.get(i).ordinal();
@@ -46,7 +46,7 @@ public class HandEvaluator {
     }
 
     public static EvaluatedHand evaluateHand(List<Card> allCards) {
-        
+
         if (allCards.size() != 7) {
             throw new IllegalArgumentException("Hand must contain exactly 7 cards.");
         }
@@ -72,7 +72,7 @@ public class HandEvaluator {
             flushCards.sort((a, b) -> b.getRank().ordinal() - a.getRank().ordinal());
         }
 
-        
+
         if (isFlush) {
             List<Card> potentialStraightFlush = new ArrayList<>(flushCards);
             EvaluatedHand straightFlush = findStraight(potentialStraightFlush);
@@ -84,23 +84,23 @@ public class HandEvaluator {
             }
         }
 
-        
+
         EvaluatedHand fourKind = findMultiple(sortedCards, 4);
         if (fourKind != null) {
-            
+
             Rank kicker = getKickers(sortedCards, Arrays.asList(fourKind.getHighCards().get(0)), 1).get(0);
             List<Rank> highCards = new ArrayList<>(fourKind.getHighCards());
             highCards.add(kicker);
             return new EvaluatedHand(HandRank.FOUR_OF_A_KIND, highCards);
         }
 
-        
+
         EvaluatedHand fullHouse = findFullHouse(sortedCards);
         if (fullHouse != null) {
             return fullHouse;
         }
 
-        
+
         if (isFlush) {
             List<Rank> highCards = new ArrayList<>();
             for (int i = 0; i < 5; i++) {
@@ -109,13 +109,13 @@ public class HandEvaluator {
             return new EvaluatedHand(HandRank.FLUSH, highCards);
         }
 
-        
+
         EvaluatedHand straight = findStraight(sortedCards);
         if (straight != null) {
             return new EvaluatedHand(HandRank.STRAIGHT, straight.getHighCards());
         }
 
-        
+
         EvaluatedHand threeKind = findMultiple(sortedCards, 3);
         if (threeKind != null) {
             List<Rank> highCards = new ArrayList<>(threeKind.getHighCards());
@@ -123,7 +123,7 @@ public class HandEvaluator {
             return new EvaluatedHand(HandRank.THREE_OF_A_KIND, highCards);
         }
 
-        
+
         List<Rank> twoPairs = findTwoPairs(sortedCards);
         if (twoPairs.size() >= 2) {
             List<Rank> highCards = new ArrayList<>(twoPairs.subList(0, 2));
@@ -131,7 +131,7 @@ public class HandEvaluator {
             return new EvaluatedHand(HandRank.TWO_PAIR, highCards);
         }
 
-        
+
         EvaluatedHand onePair = findMultiple(sortedCards, 2);
         if (onePair != null) {
             List<Rank> highCards = new ArrayList<>(onePair.getHighCards());
@@ -139,7 +139,7 @@ public class HandEvaluator {
             return new EvaluatedHand(HandRank.ONE_PAIR, highCards);
         }
 
-        
+
         List<Rank> highCards = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             highCards.add(sortedCards.get(i).getRank());
@@ -156,7 +156,7 @@ public class HandEvaluator {
         for (Rank rank : Rank.values()) {
             if (rankCount.getOrDefault(rank, 0) >= count) {
                 List<Rank> highCards = Collections.singletonList(rank);
-                return new EvaluatedHand(null, highCards); 
+                return new EvaluatedHand(null, highCards);
             }
         }
         return null;
@@ -202,7 +202,7 @@ public class HandEvaluator {
             }
         }
 
-        
+
         pairs.sort((a, b) -> b.ordinal() - a.ordinal());
         return pairs;
     }
@@ -216,9 +216,9 @@ public class HandEvaluator {
         List<Integer> sortedRanks = new ArrayList<>(uniqueRanks);
         Collections.sort(sortedRanks, Collections.reverseOrder());
 
-        
+
         if (uniqueRanks.contains(Rank.ACE.ordinal())) {
-            sortedRanks.add(0, 0); 
+            sortedRanks.add(0, 0);
         }
 
         int consecutive = 1;

@@ -357,6 +357,10 @@ public class GameScreen {
         this.playerChips = chips;
     }
 
+    public void hideResult() {
+        gameResultLabel.setVisible(false);
+    }
+
     public void showWaitingScreen() {
 
         nameTable.setVisible(false);
@@ -403,7 +407,7 @@ public class GameScreen {
         readyTable.setVisible(false);
         waitingTable.setVisible(false);
         waitingForStartLabel.setVisible(false);
-
+        gameResultLabel.setVisible(false);
 
         gameTable.setVisible(true);
         isGameStarted = true;
